@@ -5,10 +5,14 @@ import streamlit as st
 from ydata_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
 
+st.set_page_config(
+    page_title="EDA CSV",
+    page_icon="📊"
+)
+st.title("Exploratory Data Analysis")
+
 # Web App Title
 st.markdown('''
-# **Exploratory Data Analysis**
-
 **Credit:** App built in `Python` + `Streamlit` by [Chanin Nantasenamat](https://medium.com/@chanin.nantasenamat) (aka [Data Professor](http://youtube.com/dataprofessor)) - adapted here for professionnal purposes.
 
 ---
