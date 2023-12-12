@@ -32,7 +32,7 @@ with st.sidebar.header('Upload your CSV data'):
 
 # Pandas Profiling Report
 if uploaded_file is not None or len(path)>0:
-    # Generate analysis report
+    ## Generate analysis report
     @st.cache_data
     def load_csv(csv_path: str, csv_sep: str):
         if uploaded_file is None and len(csv_path) > 0:
@@ -46,9 +46,9 @@ if uploaded_file is not None or len(path)>0:
     st.write(df)
     st.write('---')
     st.header('**Pandas Profiling Report**')
-    # st_profile_report(pr)
+    st_profile_report(pr)
     
-    # Transform data
+    ## Transform data
     st.markdown("_ _ _")
     st.header("**Modify CSV data**")
     with st.form("my_form"):
