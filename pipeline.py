@@ -130,6 +130,7 @@ def pipeline(data: pd.DataFrame, miss_value: str, standardize_cols: list, one_ho
     data = data.drop(drop_columns, axis=1)
     standardize_cols = [c for c in standardize_cols if c not in drop_columns]
     one_hot_encoding_cols = [c for c in one_hot_encoding_cols if c not in drop_columns]
+    datetype_cols = [c for c in data.columns if c not in standardize_cols and c not in one_hot_encoding_cols]
 
     # Handle missing values
     data = handle_NA(data, miss_value, standardize_cols, one_hot_encoding_cols, folder_name*figures)
@@ -141,7 +142,7 @@ def pipeline(data: pd.DataFrame, miss_value: str, standardize_cols: list, one_ho
     data = one_hot_encode_cols(data, one_hot_encoding_cols, folder_name*figures)
 
     # Correlations
-    if figures: plot_corrs(data, folder_name, csv_separator)
+    if figures: plot_corrs(data.drop(datetype_cols, axis=1), folder_name, csv_separator)
 
     # Save results in zip
     data.to_csv(os.path.join(folder_name, "eda_processed_data.csv"), sep=csv_separator, index=False)
