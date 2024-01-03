@@ -6,14 +6,13 @@ import streamlit as st
 from ydata_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
 
-from pipeline import pipeline
+from pipeline import pipeline, delete_dir
 
 st.set_page_config(
     page_title="EDA CSV",
     page_icon="📊"
 )
 st.title("Exploratory Data Analysis")
-st.title("Version test")
 # Web App Title
 st.markdown('''
 **Credit:** App built in `Python` + `Streamlit` by [Chanin Nantasenamat](https://medium.com/@chanin.nantasenamat) (aka [Data Professor](http://youtube.com/dataprofessor)) - adapted here for professionnal purposes.
@@ -30,33 +29,30 @@ with st.sidebar.header('Upload your CSV data'):
 [Example CSV input file](https://raw.githubusercontent.com/dataprofessor/data/master/delaney_solubility_with_descriptors.csv)
 """)
 
-# Pandas Profiling Report
 if uploaded_file is not None or len(path)>0:
-    ## Generate analysis report
+
     @st.cache_data
     def load_csv(csv_path: str, csv_sep: str):
         if uploaded_file is None and len(csv_path) > 0:
             csv = pd.read_csv(csv_path, sep=csv_sep)
         else:
             csv = pd.read_csv(uploaded_file, sep=csv_sep)
+        csv.rename(columns={col: col.replace("/", "_slash_") for col in csv.columns}, inplace=True)
         return csv
     df = load_csv(path, sep)
-    pr = ProfileReport(df, explorative=True)
+
     st.header('**Input DataFrame**')
     st.write(df)
     st.write('---')
-    st.header('**Pandas Profiling Report**')
-    st_profile_report(pr)
-    
+
     ## Transform data
-    st.markdown("_ _ _")
     st.header("**Modify CSV data**")
     with st.form("my_form"):
         missing_values = st.selectbox(
             'Handle missing values (NA)',
-            ('Do not handle', 'Drop NA', 'Fill with column mean', 'Fill with column median', )
+            ('Do not handle', 'Drop NA', 'Fill with column mean', 'Fill with column median', 'Fill only object columns')
         )
-        st.write("*Note : filling missing values with mean/median only works for numerical values; categorical columns would still contain missing values.")
+        st.write("*Note : filling missing values with mean/median only works for numerical values; categorical columns will be filled with 'none' string.")
         stand = st.multiselect(
             "Standardize columns",
             list(df.columns),
@@ -69,19 +65,47 @@ if uploaded_file is not None or len(path)>0:
             [col for col in df.columns if df[col].dtype not in ['float64', 'int64']]
         )
 
+        drops = st.multiselect(
+            "Drop column(s)",
+            list(df.columns),
+            []
+        )
+
         new_sep = st.text_input("Specify desired CSV separator", ",")
+
+        get_zip = st.checkbox("Get descriptive analysis figures ?")
 
         submitted = st.form_submit_button("Apply transformations")
 
     if submitted:
-        new_df = pipeline(df, missing_values, stand, one_hot, new_sep)
-        new_data_as_csv = new_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Download transformed dataframe as CSV file",
-            new_data_as_csv,
-            "transformed_data.csv",
-            "text/csv"
-            )
+            
+        dirname = pipeline(
+            data=df,
+            miss_value=missing_values,
+            standardize_cols=stand,
+            one_hot_encoding_cols=one_hot,
+            drop_columns=drops,
+            csv_separator=new_sep,
+            figures=get_zip)
+
+        with open(dirname, "rb") as fp:
+            dl_btn = st.download_button(
+                label="Download processed data",
+                data=fp,
+                file_name=dirname,
+                mime="application/zip"
+                )
+    
+    else:
+        filetree = [".env", ".git", ".gitignore", "app.py", "helpers.py", "pipeline.py", "README.md", "requirements.txt"]
+        for obj in os.listdir(os.getcwd()):
+            if obj not in filetree: delete_dir(obj)
+
+    ## Pandas Profiling Report
+    st.markdown("_ _ _")
+    pr = ProfileReport(df, explorative=True)
+    st.header('**Pandas Profiling Report**')
+    st_profile_report(pr)
 
 else:
     st.info('Awaiting for CSV file to be uploaded.')
